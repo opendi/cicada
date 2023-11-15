@@ -14,15 +14,16 @@
  *  either express or implied. See the License for the specific
  *  language governing permissions and limitations under the License.
  */
-namespace Cicada\Tests;
 
+namespace Cicada\Tests\Routing;
+
+use BadMethodCallException;
 use Cicada\Routing\Route;
 use Cicada\Routing\RouteCollection;
+use PHPUnit\Framework\TestCase;
 
-class RouteCollectionTest extends \PHPUnit_Framework_TestCase
-{
-    public function testMethods()
-    {
+class RouteCollectionTest extends TestCase {
+    public function testMethods() {
         $callback = function () {};
         $path = "/foo";
 
@@ -66,8 +67,7 @@ class RouteCollectionTest extends \PHPUnit_Framework_TestCase
         }
     }
 
-    public function testForwardToExistingRoutes()
-    {
+    public function testForwardToExistingRoutes() {
         $callback = function () {};
         $before = function () {};
         $after = function () {};
@@ -90,11 +90,11 @@ class RouteCollectionTest extends \PHPUnit_Framework_TestCase
 
         // And check they are present on all routes in collection
         foreach ($routes as $route) {
-            $this->assertInternalType('array', $route->getBefore());
+            $this->assertIsArray($route->getBefore());
             $this->assertCount(1, $route->getBefore());
             $this->assertSame($before, $route->getBefore()[0]);
 
-            $this->assertInternalType('array', $route->getAfter());
+            $this->assertIsArray($route->getAfter());
             $this->assertCount(1, $route->getAfter());
             $this->assertSame($after, $route->getAfter()[0]);
         }
@@ -107,22 +107,19 @@ class RouteCollectionTest extends \PHPUnit_Framework_TestCase
         $routes[] = $collection->get($path, $callback);
 
         foreach ($routes as $route) {
-            $this->assertInternalType('array', $route->getBefore());
+            $this->assertIsArray($route->getBefore());
             $this->assertCount(1, $route->getBefore());
             $this->assertSame($before, $route->getBefore()[0]);
 
-            $this->assertInternalType('array', $route->getAfter());
+            $this->assertIsArray($route->getAfter());
             $this->assertCount(1, $route->getAfter());
             $this->assertSame($after, $route->getAfter()[0]);
         }
     }
 
-    /**
-     * @expectedException BadMethodCallException
-     * @expectedExceptionMessage Method foo does not exist.
-     */
-    public function testInvalidMethod()
-    {
+    public function testInvalidMethod() {
+        $this->expectExceptionMessage("Method foo does not exist.");
+        $this->expectException(BadMethodCallException::class);
         $baseRoute = new Route();
         $collection = new RouteCollection($baseRoute);
         $collection->foo();

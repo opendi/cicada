@@ -14,13 +14,14 @@
  *  either express or implied. See the License for the specific
  *  language governing permissions and limitations under the License.
  */
+
 namespace Cicada;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use UnexpectedValueException;
 
-trait RequestProcessorTrait
-{
+trait RequestProcessorTrait {
     /** Array of callbacks to call before processing the request. */
     private $before = [];
 
@@ -28,23 +29,20 @@ trait RequestProcessorTrait
     private $after = [];
 
     /** Adds a callback to execute before the request. */
-    public function before(callable $callback)
-    {
+    public function before(callable $callback) {
         $this->before[] = $callback;
 
         return $this;
     }
 
     /** Adds a callback to execute after the request. */
-    public function after(callable $callback)
-    {
+    public function after(callable $callback) {
         $this->after[] = $callback;
 
         return $this;
     }
 
-    public function processRequest(Application $app, Request $request, $callback, array $arguments = [])
-    {
+    public function processRequest(Application $app, Request $request, $callback, array $arguments = []) {
         // Callbacks to execute before the route
         $response = $this->invokeBefore($arguments, [$app, $request]);
 
@@ -56,6 +54,9 @@ trait RequestProcessorTrait
         // If callback does not return a Response, try to create one. This
         // throws an exception if $response cannot be converted to a Response.
         if (!($response instanceof Response)) {
+            if (!is_string($response) && $response !== null) {
+                throw new UnexpectedValueException('The Response content must be a string or object implementing __toString()');
+            }
             $response = new Response($response, Response::HTTP_OK, ['Content-Type' => 'text/html']);
         }
 
@@ -65,33 +66,11 @@ trait RequestProcessorTrait
         return $response;
     }
 
-    /** Clear the before callbacks */
-    public function clearBefore()
-    {
-        $this->before = [];
-        return $this;
-    }
-
-    /** Clear the after callbacks */
-    public function clearAfter()
-    {
-        $this->after = [];
-        return $this;
-    }
-
-    /** Clear both before and after callbacks */
-    public function clearMiddlewares()
-    {
-        $this->clearBefore()->clearAfter();
-        return $this;
-    }
-
     /**
      * Invokes callbacks from `$this->before`, and if any of them returns a
      * Response stops processing others and returns the given response.
      */
-    private function invokeBefore(array $namedParams, array $classParams)
-    {
+    private function invokeBefore(array $namedParams, array $classParams) {
         $invoker = new Invoker();
         foreach ($this->before as $function) {
             $response = $invoker->invoke($function, $namedParams, $classParams);
@@ -104,11 +83,28 @@ trait RequestProcessorTrait
     /**
      * Invokes the callbacks from `$this->after`, ignoring any returned values.
      */
-    private function invokeAfter(array $namedParams, array $classParams)
-    {
+    private function invokeAfter(array $namedParams, array $classParams) {
         $invoker = new Invoker();
         foreach ($this->after as $function) {
             $invoker->invoke($function, $namedParams, $classParams);
         }
+    }
+
+    /** Clear both before and after callbacks */
+    public function clearMiddlewares() {
+        $this->clearBefore()->clearAfter();
+        return $this;
+    }
+
+    /** Clear the after callbacks */
+    public function clearAfter() {
+        $this->after = [];
+        return $this;
+    }
+
+    /** Clear the before callbacks */
+    public function clearBefore() {
+        $this->before = [];
+        return $this;
     }
 }

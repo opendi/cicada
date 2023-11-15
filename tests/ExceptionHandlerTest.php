@@ -14,70 +14,78 @@
  *  either express or implied. See the License for the specific
  *  language governing permissions and limitations under the License.
  */
+
 namespace Cicada\Tests;
 
+use BadMethodCallException;
 use Cicada\ExceptionHandler;
+use Exception;
+use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\Request;
 
-use Mockery as m;
-
-class ExceptionHandlerTest extends \PHPUnit_Framework_TestCase
-{
-    public function testAdd()
-    {
+class ExceptionHandlerTest extends TestCase {
+    public function testAdd() {
         $handler = new ExceptionHandler();
-        $callback = function(\Exception $ex) {};
+        $callback = function (Exception $ex) {};
 
         $handler->add($callback);
 
         $callbacks = $handler->getCallbacks();
-        $this->assertInternalType('array', $callbacks);
+        $this->assertIsArray($callbacks);
         $this->assertCount(1, $callbacks);
         $this->assertSame($callback, reset($callbacks));
     }
 
-    /**
-     * @expectedException Exception
-     * @expectedExceptionMessage Invalid exception callback: Has no arguments. Expected at least one.
-     */
-    public function testAddTooFewArguemnts()
-    {
+    public function testAddTooFewArguemnts() {
+        $this->expectExceptionMessage("Invalid exception callback: Has no arguments. Expected at least one.");
+        $this->expectException(Exception::class);
+
         $handler = new ExceptionHandler();
-        $callback = function() {};
+        $callback = function () {};
         $handler->add($callback);
     }
 
-    /**
-     * @expectedException Exception
-     * @expectedExceptionMessage Invalid exception callback: The first argument must have a class type hint.
-     */
-    public function testAddNoTypeHint()
-    {
+    public function testAddNoTypeHint() {
+        $this->expectExceptionMessage("Invalid exception callback: The first argument must have a class type hint.");
+        $this->expectException(Exception::class);
+
         $handler = new ExceptionHandler();
-        $callback = function($x) {};
+        $callback = function ($x) {};
         $handler->add($callback);
     }
 
-    public function testMultipleCallbacks()
-    {
+    public function testMultipleCallbacks() {
         $handler = new ExceptionHandler();
-        $handler->add(function(\InvalidArgumentException $ex) { return 1; });
-        $handler->add(function(\Exception $ex) { return 2; });
+        $handler->add(function (InvalidArgumentException $ex) {
+            return 1;
+        });
+        $handler->add(function (Exception $ex) {
+            return 2;
+        });
 
-        $request = m::mock('Symfony\\Component\\HttpFoundation\\Request');
-        $actual = $handler->handle(new \InvalidArgumentException(), $request);
+        $request = $this->getMockBuilder(Request::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $actual = $handler->handle(new InvalidArgumentException(), $request);
         $this->assertSame(1, $actual);
 
-        $actual = $handler->handle(new \Exception(), $request);
+        $actual = $handler->handle(new Exception(), $request);
         $this->assertSame(2, $actual);
     }
 
-    public function testNoMaches()
-    {
+    public function testNoMaches() {
         $handler = new ExceptionHandler();
-        $handler->add(function(\InvalidArgumentException $ex) { return 1; });
+        $handler->add(function (InvalidArgumentException $ex) {
+            return 1;
+        });
 
-        $request = m::mock('Symfony\\Component\\HttpFoundation\\Request');
-        $actual = $handler->handle(new \BadMethodCallException(), $request);
+        $request = $this->getMockBuilder(Request::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $actual = $handler->handle(new BadMethodCallException(), $request);
         $this->assertNull($actual);
     }
 }

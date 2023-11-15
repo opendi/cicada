@@ -22,13 +22,14 @@
         </testsuite>
     </testsuites>
 
-    <logging>
-        <log type="coverage-html" target="target/coverage" charset="UTF-8" />
-    </logging>
-
-    <filter>
-        <whitelist>
+    <coverage>
+        <include>
             <directory suffix=".php">src</directory>
-        </whitelist>
-    </filter>
+        </include>
+
+        <report>
+            <html outputDirectory="target/coverage" lowUpperBound="50" highLowerBound="90"/>
+        </report>
+    </coverage>
+
 </phpunit>

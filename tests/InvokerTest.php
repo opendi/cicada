@@ -14,25 +14,25 @@
  *  either express or implied. See the License for the specific
  *  language governing permissions and limitations under the License.
  */
+
 namespace Cicada\Tests;
 
-use Cicada\Invoker;
 use Cicada\Application;
-
+use Cicada\Invoker;
+use Exception;
+use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
-function invokerTestFunction(Application $app, Request $request, $foo, $bar)
-{
+function invokerTestFunction(Application $app, Request $request, $foo, $bar) {
     return func_get_args();
 }
 
-class ApplicationSubClass extends Application
-{
+class ApplicationSubClass extends Application {
 
 }
 
-class InvokerTest extends \PHPUnit_Framework_TestCase
-{
+class InvokerTest extends TestCase {
     private $namedParams = [
         'a' => 'a_val',
         'b' => 'b_val',
@@ -42,8 +42,7 @@ class InvokerTest extends \PHPUnit_Framework_TestCase
         'y' => 'y_val',
     ];
 
-    public function testInvokeAnonymousFunction()
-    {
+    public function testInvokeAnonymousFunction() {
         $app = new Application();
         $request = new Request();
         $classParams = [$app, $request];
@@ -85,8 +84,7 @@ class InvokerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected5, $actual5);
     }
 
-    public function testInvokeClassMethod()
-    {
+    public function testInvokeClassMethod() {
         $app = new Application();
         $request = new Request();
         $classParams = [$app, $request];
@@ -111,8 +109,7 @@ class InvokerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected5, $actual5);
     }
 
-    public function testInvokeClassMethod2()
-    {
+    public function testInvokeClassMethod2() {
         $app = new Application();
         $request = new Request();
         $classParams = [$app, $request];
@@ -137,8 +134,7 @@ class InvokerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected5, $actual5);
     }
 
-    public function testInvokeObjectMethod()
-    {
+    public function testInvokeObjectMethod() {
         $app = new Application();
         $request = new Request();
         $classParams = [$app, $request];
@@ -165,8 +161,7 @@ class InvokerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected5, $actual5);
     }
 
-    public function testInvokeSubClass()
-    {
+    public function testInvokeSubClass() {
         // Check that a subclass of Application is properly injected
         $app = new ApplicationSubClass();
         $request = new Request();
@@ -192,8 +187,7 @@ class InvokerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected5, $actual5);
     }
 
-    public function testInvokeFunction()
-    {
+    public function testInvokeFunction() {
         $app = new Application();
         $request = new Request();
         $classParams = [$app, $request];
@@ -205,58 +199,43 @@ class InvokerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $actual);
     }
 
-    /**
-     * @expectedException Exception
-     * @expectedExceptionMessage Given argument is not callable.
-     */
-    public function testNotCallable()
-    {
+    public function testNotCallable() {
+        $this->expectExceptionMessage("Given argument is not callable.");
+        $this->expectException(Exception::class);
+
         $invoker = new Invoker();
         $invoker->invoke(123);
     }
 
-    /**
-     * @expectedException Exception
-     * @expectedExceptionMessage Class HopeThisDoesntExist does not exist.
-     */
-    public function testClassDoesNotExist()
-    {
+    public function testClassDoesNotExist() {
+        $this->expectExceptionMessage("Class HopeThisDoesntExist does not exist.");
+        $this->expectException(Exception::class);
+
         $invoker = new Invoker();
         $invoker->invoke("HopeThisDoesntExist::method");
     }
 
-    /**
-     * @expectedException Exception
-     * @expectedExceptionMessage Method Cicada\Tests\InvokerTest::foo does not exist
-     */
-    public function testMethodDoesNotExist()
-    {
+    public function testMethodDoesNotExist() {
+        $this->expectExceptionMessage("Method Cicada\Tests\InvokerTest::foo does not exist");
+        $this->expectException(Exception::class);
+
         $invoker = new Invoker();
         $invoker->invoke("Cicada\\Tests\\InvokerTest::foo");
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $classParams entries must be objects.
-     */
-    public function testNonObjectClassParam()
-    {
-        $function = function () {
-        };
+    public function testNonObjectClassParam() {
+        $this->expectExceptionMessage("\$classParams entries must be objects.");
+        $this->expectException(InvalidArgumentException::class);
+        $function = function () {};
 
         $invoker = new Invoker();
         $invoker->invoke($function, [], ['not_an_object']);
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $classParams contains multiple objects of the
-     *     same class [Symfony\Component\HttpFoundation\Request].
-     */
-    public function testMultipleClassParamOfSameClass()
-    {
-        $function = function () {
-        };
+    public function testMultipleClassParamOfSameClass() {
+        $this->expectExceptionMessage("\$classParams contains multiple objects of the same class [Symfony\Component\HttpFoundation\Request].");
+        $this->expectException(InvalidArgumentException::class);
+        $function = function () {};
 
         $invoker = new Invoker();
         $invoker->invoke($function, [], [new Request(), new Request()]);

@@ -14,25 +14,27 @@
  *  either express or implied. See the License for the specific
  *  language governing permissions and limitations under the License.
  */
-namespace Cicada\Tests;
 
-use Cicada\Routing\Route;
+namespace Cicada\Tests\Routing;
+
 use Cicada\Application;
-
+use Cicada\Routing\Route;
+use Exception;
+use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use UnexpectedValueException;
 
-class RouteTest extends \PHPUnit_Framework_TestCase
-{
+class RouteTest extends TestCase {
     public $indicator;
 
-    public function testAccessors()
-    {
+    public function testAccessors() {
         $path = '/foo/bar';
-        $callback = function() {};
+        $callback = function () {};
         $method = Route::HTTP_GET;
-        $before = [function() {}];
-        $after = [function() {}];
+        $before = [function () {}];
+        $after = [function () {}];
         $name = "foo";
 
         $route = new Route($path, $callback, $method, $before, $after, $name);
@@ -45,8 +47,7 @@ class RouteTest extends \PHPUnit_Framework_TestCase
         $this->assertSame($name, $route->getName());
     }
 
-    public function testNaming()
-    {
+    public function testNaming() {
         $name = "foo";
 
         $route = new Route();
@@ -59,8 +60,7 @@ class RouteTest extends \PHPUnit_Framework_TestCase
         $this->assertSame($return, $route);
     }
 
-    public function testMatching()
-    {
+    public function testMatching() {
         $path = '/foo/bar';
 
         $route = new Route($path);
@@ -71,8 +71,7 @@ class RouteTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($route->matches('/foo/barr'));
     }
 
-    public function testMatchingWithVariables()
-    {
+    public function testMatchingWithVariables() {
         $path = '/foo/{x}/bar/{y}/baz';
 
         $route = new Route($path);
@@ -82,8 +81,7 @@ class RouteTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $actual);
     }
 
-    public function testBeforeAfter()
-    {
+    public function testBeforeAfter() {
         $this->indicator = [];
 
         $b1 = function (Application $app, $x) {
@@ -146,8 +144,7 @@ class RouteTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("Foo", $response->getContent());
     }
 
-    public function testBeforeReturnedValueStopsExection()
-    {
+    public function testBeforeReturnedValueStopsExection() {
         $this->indicator = [];
 
         $b1 = function () {
@@ -183,8 +180,7 @@ class RouteTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("Stop! Hammertime.", $response->getContent());
     }
 
-    public function testAfterReturnedValueDoesNotStopExection()
-    {
+    public function testAfterReturnedValueDoesNotStopExection() {
         $this->indicator = [];
 
         $a1 = function (Application $app, $x) {
@@ -229,12 +225,10 @@ class RouteTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("Foo", $response->getContent());
     }
 
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage The Response content must be a string or object implementing __toString(), "array" given.
-     */
-    public function testExceptionWhenRouteReturnsCrap()
-    {
+    public function testExceptionWhenRouteReturnsCrap() {
+        $this->expectExceptionMessage("The Response content must be a string or object implementing __toString()");
+        $this->expectException(UnexpectedValueException::class);
+
         $route = new Route('/', function () {
             return []; // Invalid return value for a route
         });
@@ -244,8 +238,7 @@ class RouteTest extends \PHPUnit_Framework_TestCase
         $route->run($app, $request);
     }
 
-    public function testBuilderSetters()
-    {
+    public function testBuilderSetters() {
         $route = new Route();
 
         // Path
@@ -310,18 +303,14 @@ class RouteTest extends \PHPUnit_Framework_TestCase
         $this->assertSame($result, $route);
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Unknown HTTP method: XXX
-     */
-    public function testInvalidMethod()
-    {
+    public function testInvalidMethod() {
+        $this->expectExceptionMessage("Unknown HTTP method: XXX");
+        $this->expectException(InvalidArgumentException::class);
         $route = new Route();
         $route->method('XXX');
     }
 
-    public function testGetRealPath()
-    {
+    public function testGetRealPath() {
         $route = new Route("/hi/{foo}/ho/{bar}");
         $route->assert('foo', '\\d+');
         $route->assert('bar', '\\d+');
@@ -334,8 +323,7 @@ class RouteTest extends \PHPUnit_Framework_TestCase
         $this->assertSame($expected, $actual);
     }
 
-    public function testGetRealPathWithPrefix()
-    {
+    public function testGetRealPathWithPrefix() {
         $route = new Route("/hi/{foo}/ho/{bar}");
         $route->prefix('/prefix')
             ->assert('foo', '\\d+')
@@ -349,8 +337,7 @@ class RouteTest extends \PHPUnit_Framework_TestCase
         $this->assertSame($expected, $actual);
     }
 
-    public function testGetRealPathWithPrefix2()
-    {
+    public function testGetRealPathWithPrefix2() {
         // This time, placeholders in prefix
         $prefix = "/foo/{bar}/baz";
 
@@ -368,24 +355,18 @@ class RouteTest extends \PHPUnit_Framework_TestCase
         $this->assertSame($expected, $actual);
     }
 
-    /**
-     * @expectedException Exception
-     * @expectedExceptionMessage Missing parameter "bar"
-     */
-    public function testGetRealPathMissingParam()
-    {
+    public function testGetRealPathMissingParam() {
+        $this->expectExceptionMessage("Missing parameter \"bar\"");
+        $this->expectException(Exception::class);
         $route = new Route("/hi/{foo}/ho/{bar}");
         $actual = $route->getRealPath([
             'foo' => '1',
         ]);
     }
 
-    /**
-     * @expectedException Exception
-     * @expectedExceptionMessage Route parameter "foo" must match pattern "\d+", given "foo".
-     */
-    public function testGetRealPathFailedAssert()
-    {
+    public function testGetRealPathFailedAssert() {
+        $this->expectExceptionMessage("Route parameter \"foo\" must match pattern \"\d+\", given \"foo\".");
+        $this->expectException(Exception::class);
         $route = new Route("/hi/{foo}");
         $route->assert('foo', '\\d+');
 

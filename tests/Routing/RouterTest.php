@@ -14,20 +14,19 @@
  *  either express or implied. See the License for the specific
  *  language governing permissions and limitations under the License.
  */
-namespace Cicada\Tests;
 
+namespace Cicada\Tests\Routing;
+
+use Cicada\Application;
 use Cicada\Routing\Route;
 use Cicada\Routing\RouteCollection;
 use Cicada\Routing\Router;
-use Cicada\Application;
-
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class RouterTest extends \PHPUnit_Framework_TestCase
-{
-    public function testAddRoute()
-    {
+class RouterTest extends TestCase {
+    public function testAddRoute() {
         // Create Router, add some Routes
         $router = new Router();
         $routes = [
@@ -36,7 +35,7 @@ class RouterTest extends \PHPUnit_Framework_TestCase
             new Route('/baz'),
         ];
 
-        foreach($routes as $route) {
+        foreach ($routes as $route) {
             $router->addRoute($route);
         }
 
@@ -45,9 +44,9 @@ class RouterTest extends \PHPUnit_Framework_TestCase
         // Create a RouteCollection, add some Routes
         $col = new RouteCollection(new Route());
 
-        $col->get('/x', function() {});
-        $col->get('/y', function() {});
-        $col->get('/z', function() {});
+        $col->get('/x', function () {});
+        $col->get('/y', function () {});
+        $col->get('/z', function () {});
 
         // Add it to the router
         $router->addRouteCollection($col);
@@ -57,20 +56,25 @@ class RouterTest extends \PHPUnit_Framework_TestCase
 
         // Anything added to the collection after adding the collection to the
         // router should not be registered.
-        $col->get('/a', function() {});
-        $col->get('/b', function() {});
-        $col->get('/c', function() {});
+        $col->get('/a', function () {});
+        $col->get('/b', function () {});
+        $col->get('/c', function () {});
 
         $this->assertSame($allRoutes, $router->getRoutes());
     }
 
-    public function testRoute()
-    {
+    public function testRoute() {
         $router = new Router();
 
-        $router->addRoute(new Route('/foo', function () { return "foo"; }, "GET"));
-        $router->addRoute(new Route('/bar', function () { return "bar"; }, "GET"));
-        $router->addRoute(new Route('/baz', function () { return "baz"; }, "GET"));
+        $router->addRoute(new Route('/foo', function () {
+            return "foo";
+        }, "GET"));
+        $router->addRoute(new Route('/bar', function () {
+            return "bar";
+        }, "GET"));
+        $router->addRoute(new Route('/baz', function () {
+            return "baz";
+        }, "GET"));
 
 
         $app = new Application();
@@ -96,8 +100,7 @@ class RouterTest extends \PHPUnit_Framework_TestCase
         $this->assertSame(404, $response->getStatusCode());
     }
 
-    public function testNamedRoutes()
-    {
+    public function testNamedRoutes() {
         $router = new Router();
 
         $r1 = (new Route())->name("r1");
@@ -113,28 +116,23 @@ class RouterTest extends \PHPUnit_Framework_TestCase
         $this->assertSame($router->getRoute('r3'), $r3);
     }
 
-    /**
-     * @expectedException \Exception
-     * @expectedExceptionMessage Route "foo" not found.
-     */
-    public function testNamedRouteNotFound()
-    {
+    public function testNamedRouteNotFound() {
+        $this->expectExceptionMessage("Route \"foo\" not found.");
+        $this->expectException(\Exception::class);
+
         $router = new Router();
         $router->getRoute("foo");
     }
 
-    /**
-     * @expectedException \Exception
-     * @expectedExceptionMessage Route name not provided.
-     */
-    public function testNamedRouteError()
-    {
+    public function testNamedRouteError() {
+        $this->expectExceptionMessage("Route name not provided.");
+        $this->expectException(\Exception::class);
+
         $router = new Router();
         $router->getRoute(null);
     }
 
-    public function testGetRoutePath()
-    {
+    public function testGetRoutePath() {
         $router = new Router();
         $route = (new Route("/foo/{bar}"))->name("route");
         $router->addRoute($route);
