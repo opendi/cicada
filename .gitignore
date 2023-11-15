@@ -1,5 +1,3 @@
-.vagrant
-/vendor/
-/target/
-/tmp/
-php_errors.log
+.phpunit.result.cache
+.idea
+vendor
